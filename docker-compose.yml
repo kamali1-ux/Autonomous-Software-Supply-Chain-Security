@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # MySQL 8 Relational Database with Flyway migration support
+  mysql:
+    image: mysql:8.0
+    container_name: sbom-guardian-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_sec2026
+      MYSQL_DATABASE: sbom_guardian_db
+      MYSQL_USER: guardian_user
+      MYSQL_PASSWORD: guardian_secret_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Java 21 Spring Boot Backend Service
+  backend-java:
+    build:
+      context: ./backend-java
+      dockerfile: Dockerfile
+    container_name: sbom-guardian-backend
+    restart: on-failure
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/sbom_guardian_db?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: guardian_user
+      SPRING_DATASOURCE_PASSWORD: guardian_secret_password
+      AI_SERVICE_URL: http://ai-service-python:8000
+      JWT_SECRET: sbom-guardian-jwt-college-secret-key-2026
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+
+  # Python 3 FastAPI Risk Intelligence Service
+  ai-service-python:
+    build:
+      context: ./ai-service-python
+      dockerfile: Dockerfile
+    container_name: sbom-guardian-ai
+    restart: on-failure
+    environment:
+      PORT: 8000
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "8000:8000"
+
+  # React + Vite Web Client / Integrated Node Full-Stack Platform
+  web-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sbom-guardian-web
+    restart: always
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend-java
+
+volumes:
+  mysql_data:

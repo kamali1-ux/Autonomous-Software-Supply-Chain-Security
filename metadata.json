@@ -1,0 +1,6 @@
+{
+  "name": "SBOM Guardian - Supply Chain Security & Self-Healing",
+  "description": "Autonomous software supply chain security platform with CycloneDX SBOM generation, vulnerability scanning, explainable risk intelligence, and policy-controlled self-healing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
